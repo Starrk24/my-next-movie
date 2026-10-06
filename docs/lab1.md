@@ -1,6 +1,6 @@
 # Lab 1: podstawy SwiftUI
 
-Na tych zajęciach budujesz ekran główny z siatką filmów i ekran szczegółów filmu. Dane są przykładowe, z `Services/SampleMovies.swift`. Prawdziwe dane z TMDB dojdą na drugich zajęciach.
+Na tych zajęciach budujesz ekran główny z siatką filmów i ekran szczegółów filmu. Dane są przykładowe, z `Services/SampleMovies.swift`. Prawdziwe dane z TMDB dojdą na kolejnych zajęciach.
 
 1. Wykonaj kroki z sekcji **Start** w [README](../README.md).
 2. Uruchom aplikację (⌘R). Na ekranie widać tylko tytuł zamiast siatki. Tak ma być.
@@ -51,18 +51,7 @@ Testy do napisania:
 
 ## Koniec zajęć
 
-1. Build (⌘B) bez ostrzeżeń. Testy (⌘U) przechodzą, żaden nie jest pominięty.
-2. Commit i push:
-
-```sh
-git add .
-git commit -m "feat: lab 1, movie grid and details"
-git push
-```
-
-## Na drugie zajęcia
-
-Załóż konto w TMDB i wygeneruj klucz API. Załóż konto w Supabase. Bez nich nie ruszysz z kolejnym laboratorium.
+Proszę o zapisanie prac w dowolny sposób i oddanie ich na Moodle gdy będzie taka możliwość.
 
 ## Dokumentacja
 
