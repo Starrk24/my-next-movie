@@ -22,16 +22,13 @@ struct MovieCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: spacingSmall){
             poster
-            caption
-            
-        }
-        
-    }
-    
+            caption}
+}
+
     private var poster: some View {
         PosterView(movie: movie)
             .overlay(alignment: .topTrailing){
-                RatingBadge(movie:movie)
+                RatingBadge(movie: movie)
                     .padding(spacingSmall)
             }
             .shadow(

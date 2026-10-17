@@ -105,10 +105,9 @@ func mainGenreId(_ movie: Movie) -> Int {
     let knowIds = knownGenreIds(movie)
     if knowIds.isEmpty{
         return noGenreId
-    }else {
+    } else {
         return knowIds[0]
     }
-    
 }
 
 /// "1999 · Action"

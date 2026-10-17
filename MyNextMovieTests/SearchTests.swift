@@ -20,8 +20,18 @@ struct FilterMoviesTests {
 
     // TODO: Lab 2, task 1. Check that diacritics do not matter: build a `Movie` titled "Amélie"
     // (other fields empty, `posterPath: nil`) and expect `filterMovies` to find it for "amelie".
-    @Test(.disabled("Lab 2, task 1: write this test"))
-    func ignoresDiacritics() {
+    @Test func ignoresDiacritics() {
+        let movie = Movie(
+                        id: 1,
+                        title: "Amélie",
+                        overview: "",
+                        releaseDate: "",
+                        posterPath: nil,
+                        voteAverage: 0.0,
+                        genreIds: []
+                )
+                let foundMovies = filterMovies([movie], query: "amelie", genreId: noGenreId)
+                #expect(titlesOf(foundMovies) == ["Amélie"])
     }
 
     @Test func filtersByGenre() {
@@ -31,8 +41,9 @@ struct FilterMoviesTests {
 
     // TODO: Lab 2, task 1. Check that the query and the genre must both match:
     // "matrix" with `genreIdAnimation` finds nothing in `sampleMovies`.
-    @Test(.disabled("Lab 2, task 1: write this test"))
-    func combinesQueryAndGenre() {
+    @Test func combinesQueryAndGenre() {
+        let foundMovies = filterMovies(sampleMovies, query: "matrix", genreId: genreIdAnimation)
+                #expect(foundMovies.isEmpty)
     }
 
     @Test func trimsSpacesAroundQuery() {

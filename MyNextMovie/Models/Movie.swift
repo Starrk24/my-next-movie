@@ -37,7 +37,6 @@ func releaseYear(_ movie: Movie) -> String {
     } else {
         return String(movie.releaseDate.prefix(releaseYearLength))
     }
-    
 }
 
 /// 8.24 -> "8.2"
