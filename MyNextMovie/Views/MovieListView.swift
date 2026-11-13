@@ -1,19 +1,44 @@
+import SwiftData
 import SwiftUI
 
 private let gridMinimumColumnWidth: CGFloat = 150
+private let placeholderMoviesCount = 6
+private let placeholderMovieTitle = "Movie title"
+
+private func makePlaceholderMovies() -> [Movie] {
+    var placeholders: [Movie] = []
+    for id in 1...placeholderMoviesCount {
+        placeholders.append(
+            Movie(
+                id: id,
+                title: placeholderMovieTitle,
+                overview: "",
+                releaseDate: "",
+                posterPath: nil,
+                voteAverage: 0,
+                genreIds: []
+            )
+        )
+    }
+    return placeholders
+}
 
 struct MovieListView: View {
     @State private var viewModel: MovieListViewModel
+    private let loadDetails: MovieDetailsLoader
 
-    init(viewModel: MovieListViewModel) {
+    init(viewModel: MovieListViewModel, loadDetails: @escaping MovieDetailsLoader) {
         _viewModel = State(initialValue: viewModel)
+        self.loadDetails = loadDetails
     }
 
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle("My Next Movie")
-                .navigationDestination(for: Movie.self) { movie in MovieDetailView(movie: movie) }
+                .navigationDestination(for: Movie.self) { movie in
+                    MovieDetailView(movie: movie, loadDetails: loadDetails)
+                }
         }
         .task { await viewModel.loadIfNeeded() }
     }
@@ -34,7 +59,7 @@ struct MovieListView: View {
 
     /// Sample movies drawn as gray shapes while the real ones load.
     private var loadingGrid: some View {
-        MovieGrid(title: "Popular", movies: sampleMovies)
+        MovieGrid(title: "Popular", movies: makePlaceholderMovies())
             .redacted(reason: .placeholder)
             .allowsHitTesting(false)
     }
@@ -49,7 +74,7 @@ struct MovieListView: View {
     }
 }
 
-private struct MovieGrid: View {
+struct MovieGrid: View {
     let title: String
     let movies: [Movie]
 
@@ -92,12 +117,16 @@ private struct MovieGridItem: View {
     var body: some View {
         NavigationLink(value: movie){
             MovieCardView(movie: movie)
-            
-        }
+        
+    }
         .buttonStyle(.plain)
     }
 }
 
 #Preview {
-    MovieListView(viewModel: MovieListViewModel(loadMovies: loadSampleMovies))
+    MovieListView(
+        viewModel: MovieListViewModel(loadMovies: fetchPopularMovies),
+        loadDetails: fetchMovieDetails
+    )
+    .modelContainer(for: storedModelTypes, inMemory: true)
 }

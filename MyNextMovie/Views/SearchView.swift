@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// How long to wait after the last keystroke before searching.
@@ -8,10 +9,13 @@ private let searchResultTitleMaxLines = 2
 private let searchInputKeySeparator = "|"
 
 struct SearchView: View {
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel: SearchViewModel
+    private let loadDetails: MovieDetailsLoader
 
-    init(viewModel: SearchViewModel) {
+    init(viewModel: SearchViewModel, loadDetails: @escaping MovieDetailsLoader) {
         _viewModel = State(initialValue: viewModel)
+        self.loadDetails = loadDetails
     }
 
     var body: some View {
@@ -22,7 +26,12 @@ struct SearchView: View {
             }
             .navigationTitle("Search")
             .searchable(text: $viewModel.query, prompt: "Title or keyword")
-            .navigationDestination(for: Movie.self) { movie in MovieDetailView(movie: movie) }
+            .onSubmit(of: .search) {
+                recordSearch(modelContext, query: viewModel.query, now: .now)
+            }
+            .navigationDestination(for: Movie.self) { movie in
+                MovieDetailView(movie: movie, loadDetails: loadDetails)
+            }
             .task(id: searchInputKey(viewModel.query, viewModel.selectedGenreId)) {
                 await searchAfterPause()
             }
@@ -37,11 +46,7 @@ struct SearchView: View {
     private var content: some View {
         switch viewModel.state {
         case .idle:
-            ContentUnavailableView(
-                "Find a movie",
-                systemImage: symbolNameSearch,
-                description: Text("Search by title or keyword, or pick a genre.")
-            )
+            SearchStartView(selectQuery: selectHistoryQuery)
         case .loading:
             ProgressView()
         case .loaded:
@@ -51,6 +56,11 @@ struct SearchView: View {
                 Task { await viewModel.search() }
             }
         }
+    }
+
+    private func selectHistoryQuery(_ query: String) {
+        viewModel.query = query
+        recordSearch(modelContext, query: query, now: .now)
     }
 
     /// Waits until the user stops typing. Every keystroke cancels the previous wait.
@@ -66,6 +76,58 @@ struct SearchView: View {
 /// Changes whenever the search input changes, which restarts the search task.
 private func searchInputKey(_ query: String, _ selectedGenreId: Int) -> String {
     return String(selectedGenreId) + searchInputKeySeparator + query
+}
+
+/// Shown before the user searches: recent searches or an empty prompt.
+private struct SearchStartView: View {
+    let selectQuery: (String) -> Void
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \SearchHistoryEntry.searchedAt, order: .reverse)
+    private var history: [SearchHistoryEntry]
+
+    var body: some View {
+        if history.isEmpty {
+            ContentUnavailableView(
+                "Find a movie",
+                systemImage: symbolNameSearch,
+                description: Text("Search by title or keyword, or pick a genre.")
+            )
+        } else {
+            List {
+                Section {
+                    ForEach(history) { entry in
+                        historyRow(entry.query)
+                    }
+                } header: {
+                    sectionHeader
+                }
+            }
+            .listStyle(.plain)
+        }
+    }
+
+    private var sectionHeader: some View {
+        HStack {
+            Text("Recent Searches")
+            Spacer()
+            Button("Clear") {
+                clearSearchHistory(modelContext)
+            }
+            .font(.subheadline)
+            .textCase(nil)
+        }
+    }
+
+    private func historyRow(_ query: String) -> some View {
+        Button {
+            selectQuery(query)
+        } label: {
+            Label(query, systemImage: symbolNameSearchHistory)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 /// Every genre from `genreTable` as a chip in one row that scrolls sideways.
@@ -152,5 +214,9 @@ private struct SearchResultRow: View {
 }
 
 #Preview {
-    SearchView(viewModel: SearchViewModel(searchMovies: searchSampleMovies))
+    SearchView(
+        viewModel: SearchViewModel(searchMovies: searchTMDBMovies),
+        loadDetails: fetchMovieDetails
+    )
+    .modelContainer(for: storedModelTypes, inMemory: true)
 }

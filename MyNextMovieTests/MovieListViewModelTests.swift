@@ -12,12 +12,12 @@ struct MovieListViewModelTests {
     }
 
     @Test func loadsMovies() async {
-        let viewModel = MovieListViewModel(loadMovies: { sampleMovies })
+        let viewModel = MovieListViewModel(loadMovies: { testMovies })
 
         await viewModel.load()
 
         #expect(viewModel.state == .loaded)
-        #expect(viewModel.movies == sampleMovies)
+        #expect(viewModel.movies == testMovies)
     }
 
     @Test func showsErrorWhenLoadingFails() async {
@@ -33,15 +33,15 @@ struct MovieListViewModelTests {
     // Count the calls in a variable that the closure passed as `loadMovies` increments,
     // call `loadIfNeeded()` twice and expect a count of 1. The test has to be `async`.
     @Test func loadIfNeededLoadsOnlyOnce() async {
-            var callCount = 0
-            let viewModel = MovieListViewModel(loadMovies: {
-                callCount += 1
-                return []
-            })
+        var callCount = 0
+        let viewModel = MovieListViewModel(loadMovies: {
+            callCount += 1
+            return []
+        })
 
-            await viewModel.loadIfNeeded()
-            await viewModel.loadIfNeeded()
+        await viewModel.loadIfNeeded()
+        await viewModel.loadIfNeeded()
 
-            #expect(callCount == 1)
-        }
+        #expect(callCount == 1)
+    }
 }
