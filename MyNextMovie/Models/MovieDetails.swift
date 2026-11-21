@@ -69,6 +69,31 @@ nonisolated struct CountryReleaseDates: Decodable {
 
 nonisolated struct ReleaseDate: Decodable {
     let certification: String
+    let releaseDate: String
+    let type: Int
+
+    enum CodingKeys: String, CodingKey {
+        case certification
+        case releaseDate = "release_date"
+        case type
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.certification = try container.decodeIfPresent(String.self, forKey: .certification) ?? ""
+        self.releaseDate = try container.decodeIfPresent(String.self, forKey: .releaseDate) ?? ""
+        self.type = try container.decodeIfPresent(Int.self, forKey: .type) ?? releaseTypeTheatrical
+    }
+
+    init(
+        certification: String,
+        releaseDate: String = "",
+        type: Int = releaseTypeTheatrical
+    ) {
+        self.certification = certification
+        self.releaseDate = releaseDate
+        self.type = type
+    }
 }
 
 nonisolated struct WatchProviderList: Decodable {
@@ -93,6 +118,8 @@ nonisolated struct WatchProvider: Decodable, Identifiable {
 }
 
 // MARK: - Constants
+
+
 
 let emptyMovieDetails = MovieDetails(
     id: 0,
@@ -122,6 +149,12 @@ private let profileBaseURL = "https://image.tmdb.org/t/p/w185"
 private let logoBaseURL = "https://image.tmdb.org/t/p/w92"
 private let factsSeparator = " · "
 private let minutesPerHour = 60
+nonisolated let releaseTypeTheatricalLimited = 2
+nonisolated let releaseTypeTheatrical = 3
+nonisolated let typicalCinemaRunInDays = 42
+
+private let releaseDayCharacterCount = 10
+private let invalidDaysSinceRelease = -1
 
 // MARK: - Functions
 
@@ -223,4 +256,46 @@ func logoURL(_ provider: WatchProvider) -> URL? {
         return nil
     }
     return URL(string: "\(logoBaseURL)\(path)")
+}
+
+func daysSinceReleaseDay(_ releaseDate: String, today: Date) -> Int {
+    guard releaseDate.count >= releaseDayCharacterCount else {
+        return invalidDaysSinceRelease
+    }
+    let dayPrefix = String(releaseDate.prefix(releaseDayCharacterCount))
+    let format = Date.ISO8601FormatStyle(timeZone: .gmt).year().month().day()
+    guard let parsedReleaseDay = try? format.parse(dayPrefix) else {
+        return invalidDaysSinceRelease
+    }
+
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = .gmt
+    let startDay = calendar.startOfDay(for: parsedReleaseDay)
+    let endDay = calendar.startOfDay(for: today)
+    guard
+        let days = calendar.dateComponents([.day], from: startDay, to: endDay).day,
+        days >= 0
+    else {
+        return invalidDaysSinceRelease
+    }
+    return days
+}
+
+func isInCinemas(_ details: MovieDetails, regionCode: String, today: Date) -> Bool {
+    for country in details.releaseDates.results {
+        if country.countryCode == regionCode {
+            for release in country.releaseDates {
+                let isTheatrical =
+                    release.type == releaseTypeTheatrical
+                    || release.type == releaseTypeTheatricalLimited
+                if isTheatrical {
+                    let days = daysSinceReleaseDay(release.releaseDate, today: today)
+                    if days >= 0 && days <= typicalCinemaRunInDays {
+                        return true
+                    }
+                }
+            }
+        }
+    }
+    return false
 }

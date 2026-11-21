@@ -11,6 +11,8 @@ private let posterShadowOffset: CGFloat = 10
 struct MovieDetailView: View {
     let movie: Movie
     @State private var viewModel: MovieDetailViewModel
+    @State private var isShowingCinemas = false
+    
 
     init(movie: Movie, loadDetails: @escaping MovieDetailsLoader) {
         self.movie = movie
@@ -20,26 +22,56 @@ struct MovieDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: spacingExtraLarge) {
-                MovieBackdrop(movie: movie)
-                MovieInfo(movie: movie, details: viewModel.details)
-                    .padding(.horizontal)
-                detailsContent
-                    .padding(.horizontal)
+            ScrollView {
+                VStack(alignment: .leading, spacing: spacingExtraLarge) {
+                    MovieBackdrop(movie: movie)
+                    MovieInfo(movie: movie, details: viewModel.details)
+                        .padding(.horizontal)
+                    if isInCinemas(viewModel.details, regionCode: watchRegionCode, today: Date.now) {
+                        nowInCinemasSection
+                            .padding(.horizontal)
+                    }
+                    detailsContent
+                        .padding(.horizontal)
+                }
+                .padding(.bottom, spacingHuge)
             }
-            .padding(.bottom, spacingHuge)
+            .ignoresSafeArea(edges: .top)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                SaveMovieButton(movie: movie)
+            }
+            .task { await viewModel.loadIfNeeded() }
+            .sheet(isPresented: $isShowingCinemas) {
+                CinemaMapView(
+                    viewModel: CinemaMapViewModel(
+                        cinemas: wroclawCinemas,
+                        findUserLocation: findUserLocation,
+                        lastKnownLocation: lastKnownUserLocation
+                    ),
+                    findRoute: findMapKitRoute,
+                    placement: .sheet
+                )
+            }
         }
-        .ignoresSafeArea(edges: .top)
-        .navigationBarTitleDisplayMode(.inline)
-        .task { await viewModel.loadIfNeeded() }
-        .ignoresSafeArea(edges: .top)
-             .navigationBarTitleDisplayMode(.inline)
-             .toolbar {
-                 SaveMovieButton(movie: movie)
-             }
-             .task { await viewModel.loadIfNeeded() }
-    }
+
+        private var nowInCinemasSection: some View {
+            VStack(alignment: .leading, spacing: spacingSmall) {
+                Button {
+                    isShowingCinemas = true
+                } label: {
+                    Label("Now in Cinemas", systemImage: symbolNameCinema)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+
+                Text("See the cinemas near you. Showtimes are on each cinema's website.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    
 
     @ViewBuilder
     private var detailsContent: some View {
@@ -55,6 +87,8 @@ struct MovieDetailView: View {
             }
         }
     }
+    
+    
 }
 
 /// The poster, sharp, on top of itself stretched to the screen width and blurred.
@@ -158,6 +192,8 @@ private struct GenreRow: View {
         .scrollClipDisabled()
     }
 }
+
+
 
 #Preview {
     PopularMoviesPreview { movies in

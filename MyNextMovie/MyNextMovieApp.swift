@@ -96,6 +96,9 @@ private struct AppTabs: View {
                     loadDetails: loadDetails
                 )
             }
+            Tab("Cinemas", systemImage: symbolNameCinema) {
+                         cinemaMap
+                     }
         }
         .task {
             await account.syncSavedMovies()
@@ -110,5 +113,17 @@ private struct AppTabs: View {
                 Task { await account.syncSavedMovies() }
             }
         }
+    }
+    private var cinemaMap: some View {
+            let viewModel = CinemaMapViewModel(
+                cinemas: wroclawCinemas,
+                findUserLocation: findUserLocation,
+                lastKnownLocation: lastKnownUserLocation
+            )
+            return CinemaMapView(
+                viewModel: viewModel,
+                findRoute: findMapKitRoute,
+                placement: .tab
+            )
     }
 }
